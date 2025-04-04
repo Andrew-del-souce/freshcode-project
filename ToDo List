@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ToDo List</title>
+  <title>ToDo List — Покращена версія</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
+      background: #f2f2f2;
       display: flex;
       justify-content: center;
       margin-top: 50px;
@@ -19,7 +19,7 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       width: 100%;
-      max-width: 400px;
+      max-width: 450px;
     }
 
     h1 {
@@ -52,6 +52,22 @@
       background-color: #45a049;
     }
 
+    .filters {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .filters button {
+      background-color: #e0e0e0;
+      color: #333;
+    }
+
+    .filters button.active {
+      background-color: #4caf50;
+      color: white;
+    }
+
     ul {
       list-style-type: none;
       padding: 0;
@@ -73,14 +89,27 @@
       color: gray;
     }
 
+    li span {
+      flex: 1;
+      cursor: pointer;
+    }
+
     li button {
       background-color: #e53935;
       padding: 5px 10px;
       border-radius: 6px;
+      margin-left: 10px;
     }
 
     li button:hover {
       background-color: #d32f2f;
+    }
+
+    .error {
+      color: red;
+      font-size: 0.9em;
+      margin-top: 10px;
+      text-align: center;
     }
   </style>
 </head>
@@ -91,11 +120,20 @@
       <input type="text" id="taskInput" placeholder="Нове завдання..." />
       <button onclick="addTask()">Додати</button>
     </div>
+    <div id="error" class="error"></div>
+
+    <div class="filters">
+      <button onclick="setFilter('all')" id="filter-all" class="active">Усі</button>
+      <button onclick="setFilter('active')" id="filter-active">Активні</button>
+      <button onclick="setFilter('completed')" id="filter-completed">Виконані</button>
+    </div>
+
     <ul id="taskList"></ul>
   </div>
 
   <script>
     let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let currentFilter = 'all';
 
     function saveTasks() {
       localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -105,12 +143,19 @@
       const list = document.getElementById("taskList");
       list.innerHTML = "";
 
-      tasks.forEach((task, index) => {
+      const filteredTasks = tasks.filter(task => {
+        if (currentFilter === "all") return true;
+        if (currentFilter === "active") return !task.completed;
+        if (currentFilter === "completed") return task.completed;
+      });
+
+      filteredTasks.forEach((task, index) => {
         const li = document.createElement("li");
         li.className = task.completed ? "completed" : "";
 
         const span = document.createElement("span");
         span.textContent = task.text;
+        span.ondblclick = () => editTask(index);
         span.onclick = () => toggleComplete(index);
 
         const deleteBtn = document.createElement("button");
@@ -125,9 +170,15 @@
 
     function addTask() {
       const input = document.getElementById("taskInput");
+      const error = document.getElementById("error");
       const text = input.value.trim();
-      if (text === "") return;
 
+      if (text === "") {
+        error.textContent = "Поле не може бути порожнім!";
+        return;
+      }
+
+      error.textContent = "";
       tasks.push({ text, completed: false });
       input.value = "";
       saveTasks();
@@ -143,6 +194,25 @@
     function deleteTask(index) {
       tasks.splice(index, 1);
       saveTasks();
+      renderTasks();
+    }
+
+    function editTask(index) {
+      const newText = prompt("Редагувати завдання:", tasks[index].text);
+      if (newText !== null) {
+        const trimmed = newText.trim();
+        if (trimmed !== "") {
+          tasks[index].text = trimmed;
+          saveTasks();
+          renderTasks();
+        }
+      }
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filters button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`filter-${filter}`).classList.add('active');
       renderTasks();
     }
 
